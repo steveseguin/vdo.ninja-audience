@@ -1,5 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod link;
+
+use link::build_vdo_ninja_url;
+
 // --- Import necessary modules ---
 use tauri::{Manager};
 use std::fs;
@@ -119,7 +123,7 @@ fn generate_random_secure_url() -> String {
 
     let audience_pass = String::from_utf8(password_bytes).unwrap();
 
-    format!("https://vdo.ninja/?push={}&audience={}", push_id, audience_pass)
+    build_vdo_ninja_url(&push_id, &audience_pass)
 }
 
 /// Validates the audience password based on a set of rules.
@@ -153,13 +157,12 @@ fn validate_audience_password(password: &str) -> Result<(), String> {
 #[tauri::command]
 fn set_and_save_vdo_ninja_link(window: tauri::Window, push_id: String, audience: String) -> Result<(), String> {
     let app_handle = window.app_handle();
-    let mut manual_url = format!("https://vdo.ninja/?push={}", push_id);
     if !audience.is_empty() {
         if let Err(e) = validate_audience_password(&audience) {
             return Err(e);
         }
-        manual_url.push_str(&format!("&audience={}", audience));
     }
+    let manual_url = build_vdo_ninja_url(&push_id, &audience);
     save_encrypted_url_to_config(&app_handle, &manual_url);
     println!("Saved manual URL: {}", manual_url);
 
